@@ -25,7 +25,7 @@ pipeline {
 
         stage('Deploy to Nexus') {
             steps {
-                
+                nexusArtifactUploader artifacts: [[artifactId: 'onlinebookstore', classifier: '', file: 'target/*.war', type: 'war']], credentialsId: 'nex', groupId: 'onlinebookstore', nexusUrl: '3.7.54.113:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'maven-releases', version: '0.0.1-SNAPSHOT'
                 }
             }
         }
