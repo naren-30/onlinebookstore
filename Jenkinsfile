@@ -8,12 +8,20 @@ pipeline {
 
     environment {
         MAVEN_OPTS = "-Dmaven.test.failure.ignore=false"
+        SONARQUBE_ENV = 'SQ'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/naren-30/onlinebookstore.git']])
+                checkout scmGit(
+                    branches: [[name: '*/master']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'github',
+                        url: 'https://github.com/naren-30/onlinebookstore.git'
+                    ]]
+                )
             }
         }
 
@@ -23,9 +31,23 @@ pipeline {
             }
         }
 
-        stage('Deploy to Nexus') {
+        stage('SonarQube Analysis') {
             steps {
-               nexusArtifactUploader artifacts: [[artifactId: 'onlinebookstore', classifier: '', file: 'target/onlinebookstore.war', type: 'war']], credentialsId: 'nex', groupId: 'onlinebookstore', nexusUrl: '3.7.54.113:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'maven-snapshots', version: '0.0.1-SNAPSHOT'
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    timeout(time: 1, unit: 'HOURS') { 
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "❌ Pipeline failed due to Quality Gate: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
@@ -33,9 +55,10 @@ pipeline {
 
     post {
         success {
-            echo 'Build and deployment to Nexus successful!'
+            echo '✅ Build, SonarQube analysis, and Quality Gate passed!'
         }
         failure {
-            echo 'Build or deployment failed.'
+            echo '❌ Build, SonarQube analysis, or Quality Gate failed.'
         }
     }
+}
