@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'mvn3'       // Make sure you configured Maven in Jenkins Global Tool Config
-        jdk 'jdk17'        // Or whichever JDK your project needs
+        maven 'mvn3'
+        jdk 'jdk17'
     }
 
     environment {
